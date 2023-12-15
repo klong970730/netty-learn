@@ -1,0 +1,18 @@
+allprojects {
+    apply plugin: 'java'
+}
+
+group = 'org.klong'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.netty:netty-all:4.1.101.Final'
+}
+
+test {
+    useJUnitPlatform()
+}
