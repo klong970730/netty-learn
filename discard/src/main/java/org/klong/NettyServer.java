@@ -10,6 +10,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 
@@ -31,9 +33,12 @@ public class NettyServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new GlobalTrafficShapingHandler(new DefaultEventExecutorGroup(Runtime.getRuntime().availableProcessors() * 2), 30, 30));
-                            ch.pipeline().addLast(new DelimiterBasedFrameDecoder(10240, Unpooled.wrappedBuffer("\n".getBytes())));
+                            ch.pipeline().addLast(new GlobalTrafficShapingHandler(new DefaultEventExecutorGroup(Runtime.getRuntime().availableProcessors() * 2), 1024, 1024));
+//                            ch.pipeline().addLast(new DelimiterBasedFrameDecoder(10240, Unpooled.wrappedBuffer("\n".getBytes())));
+                            ch.pipeline().addLast(new DelimiterBasedFrameDecoder(10240, Unpooled.wrappedBuffer(getDelimiterByPlatform().getBytes())));
+                            ch.pipeline().addLast(new StringDecoder());
                             ch.pipeline().addLast(new DiscardServerHandler());
+                            ch.pipeline().addLast(new StringEncoder());
                             ch.pipeline().addLast(new EchoServerHandler());
                         }
                     })
@@ -47,6 +52,12 @@ public class NettyServer {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
+    }
+
+    private String getDelimiterByPlatform() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        return osName.contains("windows") ? "\r\n" :
+                osName.contains("linux") ? "\n": "\r\n";
     }
 
     public static void main(String[] args) {
